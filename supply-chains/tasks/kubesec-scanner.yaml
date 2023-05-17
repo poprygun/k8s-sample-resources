@@ -1,0 +1,47 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: kubesec-scanner-task
+  labels:
+    app.kubernetes.io/version: "0.1"
+  annotations:
+    tekton.dev/pipelines.minVersion: "0.12.1"
+    tekton.dev/categories: Code Quality
+    tekton.dev/tags: scanner
+    tekton.dev/displayName: "Kubesec Scanner"
+    tekton.dev/platforms: "linux/amd64"
+spec:
+  description: >-
+    This task can be used to perform analisys of well formateness of Kubernetes resources
+  workspaces:
+    - name: scan_workspace
+      description: Scan results will be placed here.  Scan input files are here too for now.
+  params:
+    - name: input_directory
+      description: The directory containing kubernetes resources files to scan
+      default: "$(workspaces.scan_workspace.path)/output/k8s/in"  
+    - name: output_directory
+      description: The output directory for the scanner
+      default: "$(workspaces.scan_workspace.path)/output/k8s/out"
+    - name: scan_binary_directory
+      description: The directory containing the binary to be scanned
+      default: "/app/bin"
+
+  steps:
+    - name: run-kubesec
+      image: harbor.h2o-4-9446.h2o.vmware.com/supply-chain/kubesec-scanner:latest
+      command: ["cli", "scan"]
+      args:
+        - "--output_directory=$(params.output_directory)"
+        - "--directory=$(params.input_directory)"
+        - "--scan_binary_directory=$(params.scan_binary_directory)"      
+      volumeMounts:
+        - name: out
+          mountPath: /out
+  volumes:
+    - name: out
+      emptyDir: {}
+  # results:
+  #   - name: scan_output
+  #     description: The results of the kubesec scan
+  #     path: /out

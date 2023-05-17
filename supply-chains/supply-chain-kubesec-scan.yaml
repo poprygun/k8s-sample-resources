@@ -1,0 +1,14 @@
+apiVersion: carto.run/v1alpha1
+kind: ClusterSupplyChain
+metadata:
+  name: source-kubesec-scan
+spec:
+  selector:
+    apps.tanzu.vmware.com/workload-type: k8s-resource
+
+  resources:
+  - name: kubesec-source-scanner
+    templateRef:
+      kind: ClusterSourceTemplate
+      name: kubesec-scanner-source-template
+

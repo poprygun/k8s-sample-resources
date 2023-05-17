@@ -1,0 +1,81 @@
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: kubesec-scanner-pipeline
+spec:
+  params:
+  - name: repository
+    type: string
+    description: The repository with files to scan
+  - name: revision
+    type: string
+    description: The branch of repository with files to scan
+  workspaces:
+  - name: shared-workspace
+  - name: ssh-creds
+  tasks:
+    - name: clone-repo
+      taskRef:
+        name: git-cli    
+      workspaces:
+        - name: input
+          workspace: shared-workspace      
+        - name: source
+          workspace: shared-workspace
+        - name: ssh-directory
+          workspace: ssh-creds
+
+      params:
+        - name: GIT_USER_NAME
+          value: poprygun
+        - name: GIT_USER_EMAIL
+          value: poprygun@hotmail.com
+        - name: GIT_SCRIPT
+          value: |
+            git clone $(params.repository) output
+    - name: kubesec-scanner-run
+      taskRef:
+        name: kubesec-scanner-task
+      workspaces:
+        - name: scan_workspace
+          workspace: shared-workspace
+      runAfter:
+        - clone-repo
+
+    - name: commit-push
+      taskRef:
+        name: git-cli
+      runAfter:
+        - kubesec-scanner-run
+      workspaces:
+        - name: input
+          workspace: shared-workspace
+        - name: source
+          workspace: shared-workspace
+        - name: ssh-directory
+          workspace: ssh-creds
+      params:
+        - name: GIT_USER_NAME
+          value: poprygun
+        - name: GIT_USER_EMAIL
+          value: poprygun@hotmail.com
+        - name: GIT_SCRIPT
+          value: |
+            cd $(workspaces.source.path)/output
+            git add .
+            git commit --allow-empty -m "Add new scan results $(date)"
+            git push
+---
+kind: Secret
+apiVersion: v1
+metadata:
+  name: my-ssh-credentials
+data:
+  id_rsa: |
+    LS0tLS1CRUd...
+
+  known_hosts: |
+    Z2l0aHViLmNvb...
+
+  config: |
+    SG9zdCBnaXRodWIu...

@@ -1,0 +1,37 @@
+---
+apiVersion: carto.run/v1alpha1
+kind: ClusterSourceTemplate
+metadata:
+  name: kubesec-scanner-source-template
+spec:
+  template:
+    apiVersion: tekton.dev/v1beta1
+    kind: PipelineRun
+    metadata:
+      generateName: kubesec-scanner-pipeline-run-
+    spec:
+      pipelineRef:
+        name: kubesec-scanner-pipeline
+      params:
+        - name: repository
+          value: $(workload.spec.source.git.url)$
+        - name: revision
+          value: $(workload.spec.source.git.ref.branch)$
+      workspaces:
+      - name: ssh-creds
+        secret:
+          secretName: my-ssh-credentials
+      - name: shared-workspace
+        volumeClaimTemplate:
+          spec:
+            accessModes:
+              - ReadWriteOnce
+            resources:
+              requests:
+                storage: 1Gi
+
+      timeout: "1h"
+  urlPath: .status.pipelineSpec.tasks[0].params[0].value
+  revisionPath: .status.pipelineSpec.tasks[0].params[1].value
+  lifecycle: tekton
+

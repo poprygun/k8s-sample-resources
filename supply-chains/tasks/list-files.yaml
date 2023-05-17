@@ -1,0 +1,21 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: list-files
+spec:
+  workspaces:
+    - name: input
+  steps:
+    - name: write-file
+      image: alpine
+      script: |
+        #!/bin/sh
+        echo "Hello, Tekton" > $(workspaces.input.path)/hello.txt  
+    - name: list-files
+      image: alpine
+      script: |
+        #!/bin/sh
+        echo "-------------->>>>>>>>> input"
+        ls -R $(workspaces.input.path)
+        echo "-------------->>>>>>>>> output"
+        ls -R $(workspaces.output.path)
